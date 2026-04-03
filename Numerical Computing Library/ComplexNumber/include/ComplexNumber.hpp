@@ -6,21 +6,6 @@
 #include <vector>
 
 namespace Numerical {
-
-/**
- * @class Complex
- * @brief Full-featured complex number class with arithmetic, transcendental,
- *        and utility operations.
- *
- * Stores a complex number z = re + i·im in Cartesian form.
- *
- * Usage:
- * @code
- *   Complex a(3, 4);            // 3 + 4i
- *   Complex b = Complex::polar(5, M_PI/4); // from polar form
- *   std::cout << (a * b).modulus(); // |a||b|
- * @endcode
- */
 class Complex {
 public:
     // ── Constructors ──────────────────────────────────────────────────────────

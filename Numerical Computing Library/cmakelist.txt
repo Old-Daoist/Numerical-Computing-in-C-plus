@@ -29,6 +29,19 @@ add_library(Matrix STATIC
 )
 target_include_directories(Matrix PUBLIC Matrix/include)
 
-# ── Demo executable ────────────────────────────────────────────────────────────
+# ── IterativeSolvers library ───────────────────────────────────────────────────
+add_library(IterativeSolvers STATIC
+    IterativeSolvers/src/IterativeSolvers.cpp
+)
+target_include_directories(IterativeSolvers PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_link_libraries(IterativeSolvers PUBLIC Matrix)
+
+# ── Demo executable (original) ─────────────────────────────────────────────────
 add_executable(demo main.cpp)
 target_link_libraries(demo PRIVATE RootFinding ComplexNumbers Matrix)
+
+# ── Iterative Solvers demo ─────────────────────────────────────────────────────
+add_executable(iterative_demo
+    IterativeSolvers/Demo_IterativeSolvers.cpp
+)
+target_link_libraries(iterative_demo PRIVATE IterativeSolvers)
