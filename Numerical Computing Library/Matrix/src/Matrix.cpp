@@ -1,30 +1,66 @@
 #include "../include/Matrix.hpp"
-#include <iostream>
+#include <fstream>
+#include <stdexcept>
 
-SparseMatrix::SparseMatrix(int n) : n(n) {
-    B.resize(n);
-    rowPtr.resize(n+1);
+Matrix::Matrix(int r, int c) : rows(r), cols(c) {
+    data.resize(r, std::vector<double>(c, 0));
 }
 
-void SparseMatrix::inputCSR() {
-    int nnz;
-    std::cout << "Enter number of non-zero elements: ";
-    std::cin >> nnz;
-
-    values.resize(nnz);
-    colIndex.resize(nnz);
-
-    std::cout << "Enter values:\n";
-    for(int i=0;i<nnz;i++) std::cin >> values[i];
-
-    std::cout << "Enter column indices:\n";
-    for(int i=0;i<nnz;i++) std::cin >> colIndex[i];
-
-    std::cout << "Enter row pointers:\n";
-    for(int i=0;i<=n;i++) std::cin >> rowPtr[i];
-
-    std::cout << "Enter B vector:\n";
-    for(int i=0;i<n;i++) std::cin >> B[i];
+void Matrix::input() {
+    std::cout << "Enter elements row-wise:\n";
+    for(int i = 0; i < rows; i++)
+        for(int j = 0; j < cols; j++)
+            std::cin >> data[i][j];
 }
 
-int SparseMatrix::size() const { return n; }
+void Matrix::inputFromFile(const std::string& filename) {
+    std::ifstream file(filename);
+
+    if(!file)
+        throw std::runtime_error("Cannot open file");
+
+    file >> rows >> cols;
+
+    data.assign(rows, std::vector<double>(cols));
+
+    for(int i = 0; i < rows; i++)
+        for(int j = 0; j < cols; j++)
+            file >> data[i][j];
+
+    file.close();
+}
+
+void Matrix::display() const {
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < cols; j++)
+            std::cout << data[i][j] << " ";
+        std::cout << std::endl;
+    }
+}
+
+void Matrix::saveToFile(const std::string& filename) const {
+    std::ofstream file(filename);
+
+    if(!file)
+        throw std::runtime_error("Cannot open file for writing");
+
+    file << rows << " " << cols << "\n";
+
+    for(int i = 0; i < rows; i++) {
+        for(int j = 0; j < cols; j++) {
+            file << data[i][j] << " ";
+        }
+        file << "\n";
+    }
+
+    file.close();
+}
+
+int Matrix::getRows() const { return rows; }
+int Matrix::getCols() const { return cols; }
+
+double Matrix::get(int i, int j) const { return data[i][j]; }
+
+void Matrix::set(int i, int j, double val) {
+    data[i][j] = val;
+}

@@ -1,34 +1,203 @@
 #include <iostream>
-#include "include/GaussSeidel.hpp"
-#include "include/GaussJacobi.hpp"
+#include <vector>
 
-int main() {
-    int n, choice;
+#include "Matrix.hpp"
 
-    std::cout << "Enter matrix size: ";
-    std::cin >> n;
+#include "operations/Add.hpp"
+#include "operations/Subtract.hpp"
+#include "operations/Multiply.hpp"
+#include "operations/Divide.hpp"
 
-    std::cout << "1. Gauss-Seidel\n2. Gauss-Jacobi\nChoice: ";
+#include "solvers/SolveLinearEquation.hpp"
+#include "solvers/LU.hpp"
+
+// ================= MATRIX INPUT =================
+void loadMatrix(Matrix &M) {
+    int choice;
+    std::cout << "\n1. Input manually\n2. Input from file\nChoice: ";
     std::cin >> choice;
 
-    SolveLinearEquation* solver;
+    if(choice == 1) {
+        int r, c;
+        std::cout << "Enter rows and columns: ";
+        std::cin >> r >> c;
 
-    if(choice == 1)
-        solver = new GaussSeidel(n);
-    else
-        solver = new GaussJacobi(n);
+        M = Matrix(r, c);
+        M.input();
+    } else {
+        std::string filename;
+        std::cout << "Enter filename: ";
+        std::cin >> filename;
+        M.inputFromFile(filename);
+    }
+}
 
-    solver->inputCSR();
+// ================= OUTPUT =================
+void outputResult(const Matrix& result) {
+    int choice;
 
-    if(!solver->isDiagonallyDominant())
-        std::cout << "Warning: Matrix is not diagonally dominant\n";
+    std::cout << "\nOutput options:\n";
+    std::cout << "1. Display on terminal\n";
+    std::cout << "2. Save to file\n";
+    std::cout << "3. Both\n";
+    std::cout << "Choice: ";
+    std::cin >> choice;
 
-    auto result = solver->solve();
+    if(choice == 1) {
+        result.display();
+    }
+    else if(choice == 2) {
+        std::string filename;
+        std::cout << "Enter filename: ";
+        std::cin >> filename;
+        result.saveToFile(filename);
+        std::cout << "Saved to file.\n";
+    }
+    else if(choice == 3) {
+        std::string filename;
+        std::cout << "Enter filename: ";
+        std::cin >> filename;
 
-    std::cout << "\nSolution:\n";
-    for(double x : result)
-        std::cout << x << " ";
+        result.display();
+        result.saveToFile(filename);
 
-    delete solver;
-    return 0;
+        std::cout << "Also saved to file.\n";
+    }
+    else {
+        std::cout << "Invalid choice\n";
+    }
+}
+
+// ================= VECTOR INPUT =================
+std::vector<double> inputVector(int n) {
+    std::vector<double> b(n);
+    std::cout << "Enter RHS vector:\n";
+    for(int i = 0; i < n; i++)
+        std::cin >> b[i];
+    return b;
+}
+
+void printVector(const std::vector<double>& x) {
+    std::cout << "Solution:\n";
+    for(double v : x)
+        std::cout << v << " ";
+    std::cout << std::endl;
+}
+
+// ================= VALIDATION =================
+bool isSquare(const Matrix& M) {
+    return M.getRows() == M.getCols();
+}
+
+// ================= MAIN =================
+int main() {
+    Matrix A, B;
+    int choice;
+
+    while(true) {
+        std::cout << "\n==== MATRIX MENU ====\n";
+        std::cout << "1. Load Matrix A\n";
+        std::cout << "2. Load Matrix B\n";
+        std::cout << "3. Add\n";
+        std::cout << "4. Subtract\n";
+        std::cout << "5. Multiply\n";
+        std::cout << "6. Divide (2x2 only)\n";
+        std::cout << "7. Gauss Elimination\n";
+        std::cout << "8. Gauss Jacobi\n";
+        std::cout << "9. Gauss Seidel\n";
+        std::cout << "10. LU Decomposition Solve\n";
+        std::cout << "0. Exit\n";
+        std::cout << "Choice: ";
+        std::cin >> choice;
+
+        try {
+            switch(choice) {
+
+                case 1:
+                    loadMatrix(A);
+                    break;
+
+                case 2:
+                    loadMatrix(B);
+                    break;
+
+                case 3: {
+                    Matrix result = Add::compute(A,B);
+                    outputResult(result);
+                    break;
+                }
+
+                case 4: {
+                    Matrix result = Subtract::compute(A,B);
+                    outputResult(result);
+                    break;
+                }
+
+                case 5: {
+                    Matrix result = Multiply::compute(A,B);
+                    outputResult(result);
+                    break;
+                }
+
+                case 6: {
+                    Matrix result = Divide::compute(A,B);
+                    outputResult(result);
+                    break;
+                }
+
+                case 7: {
+                    if(!isSquare(A)) {
+                        std::cout << "Matrix must be square!\n";
+                        break;
+                    }
+                    std::vector<double> b = inputVector(A.getRows());
+                    auto x = GaussElimination::solve(A, b);
+                    printVector(x);
+                    break;
+                }
+
+                case 8: {
+                    if(!isSquare(A)) {
+                        std::cout << "Matrix must be square!\n";
+                        break;
+                    }
+                    std::vector<double> b = inputVector(A.getRows());
+                    auto x = GaussJacobi::solve(A, b);
+                    printVector(x);
+                    break;
+                }
+
+                case 9: {
+                    if(!isSquare(A)) {
+                        std::cout << "Matrix must be square!\n";
+                        break;
+                    }
+                    std::vector<double> b = inputVector(A.getRows());
+                    auto x = GaussSeidel::solve(A, b);
+                    printVector(x);
+                    break;
+                }
+                case 10: {
+                    if(A.getRows() != A.getCols()) {
+                        std::cout << "Matrix must be square!\n";
+                        break;
+                   }
+
+                   std::vector<double> b = inputVector(A.getRows());
+                   auto x = LU::solve(A, b);
+                   printVector(x);
+                   break;
+               }
+
+                case 0:
+                    return 0;
+
+                default:
+                    std::cout << "Invalid choice\n";
+            }
+
+        } catch(const std::exception &e) {
+            std::cout << "Error: " << e.what() << std::endl;
+        }
+    }
 }

@@ -1,0 +1,30 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "g++",
+      "args": [
+        "-g",
+        "-std=c++17",
+
+        "Main.cpp",
+
+        "Matrix/src/SolveLinearEquation.cpp",
+        "Matrix/src/GaussSeidel.cpp",
+        "Matrix/src/GaussJacobi.cpp",
+        "Matrix/src/LUDecomposition.cpp",
+        "Matrix/src/SparseMatrix.cpp",
+
+        "-o",
+        "app.exe"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "problemMatcher": ["$gcc"]
+    }
+  ]
+}
