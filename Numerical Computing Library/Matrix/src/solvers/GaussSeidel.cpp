@@ -1,4 +1,4 @@
-#include "../include/SolveLinearEquation.hpp"
+#include "../../include/solvers/SolveLinearEquation.hpp"
 
 std::vector<double> GaussSeidel::solve(const Matrix& A, const std::vector<double>& b, int iterations) {
     int n = A.getRows();

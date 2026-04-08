@@ -1,4 +1,4 @@
-#include "../include/SolveLinearEquation.hpp"
+#include "../../include/solvers/SolveLinearEquation.hpp"
 #include <stdexcept>
 
 std::vector<double> GaussElimination::solve(Matrix A, std::vector<double> b) {

@@ -1,5 +1,5 @@
-#include "../include/Divide.hpp"
-#include "../include/Multiply.hpp"
+#include "../../include/operations/Divide.hpp"
+#include "../../include/operations/Multiply.hpp"
 #include <stdexcept>
 
 Matrix Divide::compute(const Matrix& A, const Matrix& B) {

@@ -1,4 +1,4 @@
-#include "../include/Multiply.hpp"
+#include "../../include/operations/Multiply.hpp"
 #include <stdexcept>
 
 Matrix Multiply::compute(const Matrix& A, const Matrix& B) {

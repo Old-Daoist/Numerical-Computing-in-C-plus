@@ -9,7 +9,7 @@
 #include "operations/Divide.hpp"
 
 #include "solvers/SolveLinearEquation.hpp"
-#include "solvers/LU.hpp"
+#include "solvers/LUDecomposition.hpp"
 
 // ================= MATRIX INPUT =================
 void loadMatrix(Matrix &M) {

@@ -1,193 +1,323 @@
-# NumericalComputing — C++17 Library
+MATRIX NUMERICAL COMPUTING SYSTEM (C++)
 
-A header+source C++ library covering three core areas of numerical computing.
+==================================================
+
+1. OVERVIEW
+   ==================================================
+
+This project is a modular numerical computing system built in C++ using Object-Oriented Programming (OOP) principles.
+
+It supports:
+
+* Matrix operations (Addition, Subtraction, Multiplication, Division)
+* Solving linear equations using:
+
+  * Gauss Elimination (Direct Method)
+  * Gauss Jacobi (Iterative Method)
+  * Gauss Seidel (Iterative Method)
+  * LU Decomposition
+
+The system is designed as a CLI (Command Line Interface) tool with:
+
+* User input (terminal or file)
+* Output (terminal or file)
+* Expandable architecture
 
 ---
 
-## Folder Structure
+==================================================
+2. CORE ARCHITECTURE
+====================
 
-```
-NumericalComputing/
-├── CMakeLists.txt
-├── main.cpp                        ← Demo / test driver
+Project Structure:
+
+Matrix/
 │
-├── RootFinding/
-│   ├── include/RootFinding.h
-│   └── src/RootFinding.cpp
+├── include/
+│   ├── Matrix.hpp
+│   ├── operations/
+│   │   ├── Add.hpp
+│   │   ├── Subtract.hpp
+│   │   ├── Multiply.hpp
+│   │   └── Divide.hpp
+│   │
+│   └── solvers/
+│       ├── SolveLinearEquation.hpp
+│       └── LU.hpp
 │
-├── ComplexNumbers/
-│   ├── include/ComplexNumbers.h
-│   └── src/ComplexNumbers.cpp
+├── src/
+│   ├── Matrix.cpp
 │
-└── Matrix/
-    ├── include/Matrix.h
-    └── src/Matrix.cpp
-```
+│   ├── operations/
+│   │   ├── Add.cpp
+│   │   ├── Subtract.cpp
+│   │   ├── Multiply.cpp
+│   │   └── Divide.cpp
+│
+│   └── solvers/
+│       ├── GaussElimination.cpp
+│       ├── GaussJacobi.cpp
+│       ├── GaussSeidel.cpp
+│       └── LU.cpp
+│
+└── main.cpp
 
 ---
 
-## Build
+==================================================
+3. OOP CONCEPTS USED
+====================
 
-```bash
-mkdir build && cd build
-cmake ..
-cmake --build .
-./demo
-```
+1. Encapsulation
 
 ---
 
-## Modules
+The Matrix class encapsulates:
 
-### 1 · RootFinding  (`Numerical::RootFinder`)
+* Data (2D vector)
+* Methods (input, display, get, set)
 
-All methods solve **f(x) = 0** and return a `RootResult` with root, residual, iterations and convergence flag.
+Example:
+class Matrix {
+private:
+int rows, cols;
+vector<vector<double>> data;
+};
 
-| Method | Class | Convergence |
-|---|---|---|
-| `bisection` | Bracketing | Linear (1/2ⁿ) |
-| `regulaFalsi` | Bracketing | Super-linear |
-| `illinois` | Bracketing | Super-linear (improved RF) |
-| `brent` | Bracketing | Near-optimal (guaranteed) |
-| `newton` | Open | Quadratic |
-| `halley` | Open | Cubic |
-| `secant` | Open | ~1.618 |
-| `fixedPoint` | Open | Linear (if |g'|<1) |
-| `steffensen` | Open | Quadratic (no f' needed) |
-| `ridder` | Bracketing | Super-linear |
-
-```cpp
-RootFinder rf(1e-12, 500);
-auto f  = [](double x){ return x*x - 2; };
-auto df = [](double x){ return 2*x; };
-auto r  = rf.newton(f, df, 1.5);
-// r.root ≈ 1.41421356237
-```
+This hides internal representation and exposes only controlled access.
 
 ---
 
-### 2 · ComplexNumbers  (`Numerical::Complex`)
-
-Full operator overloading, polar / exponential construction, and transcendental functions.
-
-| Category | Methods |
-|---|---|
-| Constructors | Cartesian, `polar(r,θ)`, `fromExp(a,b)` |
-| Arithmetic | `+  -  *  /` (complex & scalar), unary `-` |
-| Properties | `modulus`, `modulusSq`, `argument`, `conjugate`, `inverse`, `normalize` |
-| Predicates | `isReal`, `isPureImag`, `isZero` |
-| Algebra | `pow(int)`, `pow(Complex)`, `sqrt`, `log`, `log(base)`, `exp` |
-| Trig | `sin cos tan cot sec csc` |
-| Hyperbolic | `sinh cosh tanh` |
-| Inverse trig | `asin acos atan` |
-| Roots | `nthRoots(n)` — returns all n roots |
-| Representation | `toPolar()`, `toString()`, `<<`, `>>` |
-| Constants | `Complex::ZERO ONE I NEG_ONE` |
-
-```cpp
-Complex z(3, 4);
-std::cout << z.modulus();   // 5
-std::cout << z.sqrt();      // 2 + 1i
-auto roots = z.nthRoots(3); // three cube roots
-```
+2. Abstraction
 
 ---
 
-### 3 · Matrix  (`Numerical::Matrix`)
+User interacts with:
 
-Dense matrix with direct solvers, iterative solvers, decompositions and eigenvalue methods.
+* loadMatrix()
+* outputResult()
+* compute() functions
 
-#### Decompositions
-| Method | Returns | Notes |
-|---|---|---|
-| `luDecomposition()` | {L, U, P} | Partial pivoting |
-| `ldltDecomposition()` | {L, D} | Symmetric matrices |
-| `choleskyDecomposition()` | L | SPD matrices |
-| `qrDecomposition()` | {Q, R} | Householder reflections |
-| `svd()` | {U, Σ, Vᵀ} | Via Jacobi on AᵀA |
-| `hessenbergReduction()` | {Q, H} | Householder |
-| `schurDecomposition()` | {Q, T} | QR iteration |
+They don’t need to know:
 
-#### Direct Solvers
-| Method | Algorithm |
-|---|---|
-| `solve(b)` | LU with partial pivoting |
-| `solveSPD(b)` | Cholesky |
-| `solveLeastSquares(b)` | QR |
-| `gaussianElimination(b)` | Partial-pivot GE |
-| `gaussJordan(b)` | Reduced row echelon |
-| `thomasAlgorithm(lo,d,up,rhs)` | Tridiagonal O(n) |
-
-#### Iterative Solvers
-| Method | Description |
-|---|---|
-| `jacobiIteration` | Classic Jacobi |
-| `gaussSeidelIteration` | Forward sweep |
-| `sor(b, omega)` | Successive Over-Relaxation |
-| `conjugateGradient` | SPD — optimal Krylov |
-
-#### Eigenvalue Methods
-| Method | Description |
-|---|---|
-| `powerIteration` | Dominant eigenvalue/vector |
-| `inverseIteration(mu)` | Eigenvalue nearest μ |
-| `eigenvaluesQR` | All eigenvalues (shifted QR) |
-| `jacobiEigen` | All eigenvalues+vectors (symmetric) |
-
-#### Utilities
-`determinant · inverse · rank · nullity · pseudoInverse · conditionNumber · transpose · trace · frobenius · norm1 · normInf`
-
-#### Properties
-`isSymmetric · isOrthogonal · isDiagonallyDominant · isPositiveDefinite · isSingular`
+* how multiplication works internally
+* how LU decomposition is computed
 
 ---
 
-## Namespace
-
-All classes live in `namespace Numerical`. Include the relevant header and link against the corresponding static library (or compile the `.cpp` directly).
+3. Single Responsibility Principle (SRP)
 
 ---
 
-## Requirements
+Each class has ONE job:
 
-- C++17 or newer
-- CMake ≥ 3.16 (for the provided build system)
-- Standard library only — no external dependencies
+* Matrix → stores data
+* Add → performs addition
+* Multiply → performs multiplication
+* GaussElimination → solves system
+* LU → decomposition and solving
 
+This makes system:
 
--------------------------------------------------------------
+* Easy to debug
+* Easy to extend
 
-cmake_minimum_required(VERSION 3.16)
-project(NumericalComputing CXX)
+---
 
-set(CMAKE_CXX_STANDARD 17)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
-set(CMAKE_CXX_EXTENSIONS OFF)
+4. Modularity
 
-# ── Compiler flags ─────────────────────────────────────────────────────────────
-if(MSVC)
-    add_compile_options(/W4 /O2)
-else()
-    add_compile_options(-Wall -Wextra -O2)
-endif()
+---
 
-# ── Libraries ──────────────────────────────────────────────────────────────────
+Code is split into:
 
-add_library(RootFinding STATIC
-    RootFinding/src/RootFinding.cpp
-)
-target_include_directories(RootFinding PUBLIC RootFinding/include)
+* operations/
+* solvers/
 
-add_library(ComplexNumbers STATIC
-    ComplexNumbers/src/ComplexNumbers.cpp
-)
-target_include_directories(ComplexNumbers PUBLIC ComplexNumbers/include)
+This allows:
 
-add_library(Matrix STATIC
-    Matrix/src/Matrix.cpp
-)
-target_include_directories(Matrix PUBLIC Matrix/include)
+* independent development
+* easy upgrades
 
-# ── Demo executable ────────────────────────────────────────────────────────────
-add_executable(demo main.cpp)
-target_link_libraries(demo PRIVATE RootFinding ComplexNumbers Matrix)
+---
+
+5. Static Polymorphism (Compile-time behavior)
+
+---
+
+Operations use static functions:
+
+Add::compute(A, B)
+
+No object needed → clean and efficient
+
+---
+
+6. Reusability
+
+---
+
+Matrix class is reused across:
+
+* operations
+* solvers
+
+Same structure used everywhere
+
+---
+
+==================================================
+4. DATA FLOW (HOW SYSTEM WORKS)
+===============================
+
+Step-by-step flow:
+
+1. User selects operation from menu
+2. User loads matrix (manual/file)
+3. Program stores matrix in Matrix class
+4. Operation class processes data
+5. Result is returned
+6. Output is displayed or saved
+
+---
+
+==================================================
+5. FLOWCHART (TEXTUAL)
+======================
+
+START
+|
+v
+DISPLAY MENU
+|
+v
+USER INPUT (CHOICE)
+|
++----> Load Matrix A
+|
++----> Load Matrix B
+|
++----> Perform Operation
+|
+v
+VALIDATE INPUT
+|
+v
+CALL FUNCTION
+|
+v
+COMPUTE RESULT
+|
+v
+OUTPUT RESULT (file/terminal)
+|
+v
+LOOP BACK
+|
+v
+EXIT
+
+---
+
+==================================================
+6. MATHEMATICAL METHODS USED
+============================
+
+1. Matrix Addition/Subtraction
+
+* Element-wise operation
+
+2. Matrix Multiplication
+
+* Row × Column multiplication
+
+3. Matrix Division
+
+* A / B = A × B⁻¹
+
+4. Gauss Elimination
+
+* Forward elimination
+* Back substitution
+
+5. Gauss Jacobi
+
+* Iterative update using previous values
+
+6. Gauss Seidel
+
+* Iterative update using latest values
+
+7. LU Decomposition
+
+* A = L × U
+* Solve using forward + backward substitution
+
+---
+
+==================================================
+7. ERROR HANDLING
+=================
+
+* Size mismatch → exception
+* Non-square matrix → validation
+* Non-invertible matrix → error
+* File not found → exception
+
+---
+
+==================================================
+8. KEY DESIGN DECISIONS
+=======================
+
+1. Avoid overengineering
+
+* No unnecessary inheritance
+
+2. Use static methods
+
+* Simpler usage
+* Less memory overhead
+
+3. Separate logic into folders
+
+* operations vs solvers
+
+4. Centralized I/O handling
+
+* No duplication
+
+---
+
+==================================================
+9. FUTURE IMPROVEMENTS
+======================
+
+* Sparse Matrix implementation
+* Operator overloading (A + B)
+* CMake build system
+* GUI interface
+* CSV/JSON support
+* Integration with data analytics
+
+---
+
+==================================================
+10. FINAL UNDERSTANDING
+=======================
+
+This project demonstrates:
+
+* Real-world OOP design
+* Modular system architecture
+* Numerical methods implementation
+* CLI-based software engineering
+
+It is a foundation for:
+
+* Scientific computing
+* Data analysis systems
+* Backend computation engines
+
+==================================================
+END OF DOCUMENT
+===============
