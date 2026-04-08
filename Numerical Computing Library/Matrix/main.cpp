@@ -10,6 +10,9 @@
 #include "solvers/SolveLinearEquation.hpp"
 #include "solvers/LUDecomposition.hpp"
 
+#include "numerical/Interpolation.hpp"
+#include "numerical/Eigen.hpp"
+#include "numerical/EigenPower.hpp"
 // ================= MATRIX INPUT =================
 void loadMatrix(Matrix &M) {
     int choice;
@@ -105,6 +108,9 @@ int main() {
         std::cout << "8. Gauss Jacobi\n";
         std::cout << "9. Gauss Seidel\n";
         std::cout << "10. LU Decomposition Solve\n";
+        std::cout << "11. Lagrange Interpolation\n";
+        std::cout << "12. Gershgorin Eigenvalue Estimate\n";
+        std::cout << "13. Power Method (Eigenvalue & Eigenvector)\n";
         std::cout << "0. Exit\n";
         std::cout << "Choice: ";
         std::cin >> choice;
@@ -187,6 +193,57 @@ int main() {
                    printVector(x);
                    break;
                }
+               case 11: {
+                  int n;
+                    std::cout << "Enter number of data points: ";
+                    std::cin >> n;
+
+                    std::vector<double> x(n), y(n);
+
+                    std::cout << "Enter x values:\n";
+                    for(int i = 0; i < n; i++) std::cin >> x[i];
+
+                    std::cout << "Enter y values:\n";
+                    for(int i = 0; i < n; i++) std::cin >> y[i];
+ 
+                    double value;
+                    std::cout << "Enter value to interpolate: ";
+                    std::cin >> value;
+
+                    double result = Interpolation::lagrange(x, y, value);
+
+                    std::cout << "Interpolated value = " << result << "\n";
+                    break;
+          }
+
+                    case 12: {
+                     if(A.getRows() != A.getCols()) {
+                       std::cout << "Matrix must be square!\n";
+                        break;
+                        }
+
+                       Eigen::gershgorin(A);
+                         break;
+           }
+                    case 13: {
+                        if(A.getRows() != A.getCols()) {
+                            std::cout << "Matrix must be square!\n";
+                         break;
+                       }
+
+                       std::vector<double> eigenvector;
+                       double eigenvalue = EigenPower::powerMethod(A, eigenvector);
+
+                        std::cout << "Eigenvalue: " << eigenvalue << "\n";
+                         std::cout << "Eigenvector:\n";
+
+                        for(double v : eigenvector)
+                        std::cout << v << " ";
+                        std::cout << "\n";
+
+                        break;
+            }
+           
 
                 case 0:
                     return 0;
