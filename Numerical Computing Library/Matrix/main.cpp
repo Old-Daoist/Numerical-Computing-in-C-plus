@@ -2,7 +2,6 @@
 #include <vector>
 
 #include "Matrix.hpp"
-
 #include "operations/Add.hpp"
 #include "operations/Subtract.hpp"
 #include "operations/Multiply.hpp"
