@@ -31,6 +31,7 @@ void loadMatrix(Matrix &M) {
         std::cout << "Enter filename: ";
         std::cin >> filename;
         M.inputFromFile(filename);
+        std::cout << "Opening file: " << filename << "\n";
     }
 }
 
