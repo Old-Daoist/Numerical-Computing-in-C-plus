@@ -4,6 +4,8 @@
 #include "../include/solvers/SolveLinearEquation.hpp"
 #include "../include/solvers/Cholesky.hpp"
 #include "../include/solvers/QR.hpp"
+#include "../include/numerical/Interpolation.hpp"
+#include "../include/numerical/EigenPower.hpp"
 
 // ─── Helper: build a matrix from an initializer list ─────────────────────────
 static Matrix make(int r, int c, std::vector<double> vals) {
@@ -458,4 +460,290 @@ TEST_CASE("Backward compatibility: Seidel with fixed iterations", "[solvers]") {
     
     // Should still work and produce a reasonable result
     REQUIRE(std::abs(x[0] - 1.0) < 0.1);  // Loose tolerance for 25 iterations
+}
+
+// ─── Cholesky Decomposition ──────────────────────────────────────────────────
+
+TEST_CASE("Cholesky decompose 2x2 SPD matrix", "[cholesky]") {
+    // A = [[4, 2], [2, 3]]  →  L = [[2, 0], [1, sqrt(2)]]
+    Matrix A = make(2, 2, {4, 2, 2, 3});
+    Matrix L = Cholesky::decompose(A);
+
+    REQUIRE(std::abs(L.get(0,0) - 2.0) < 1e-9);
+    REQUIRE(std::abs(L.get(0,1) - 0.0) < 1e-9);
+    REQUIRE(std::abs(L.get(1,0) - 1.0) < 1e-9);
+    REQUIRE(std::abs(L.get(1,1) - std::sqrt(2.0)) < 1e-9);
+}
+
+TEST_CASE("Cholesky decompose 3x3: verify A = L*L^T", "[cholesky]") {
+    // A = [[25, 15, -5], [15, 18, 0], [-5, 0, 11]]  (SPD)
+    Matrix A = make(3, 3, {
+        25, 15, -5,
+        15, 18,  0,
+        -5,  0, 11
+    });
+    Matrix L = Cholesky::decompose(A);
+    Matrix LT = L.transpose();
+    Matrix product = L * LT;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            REQUIRE(std::abs(product.get(i,j) - A.get(i,j)) < 1e-9);
+}
+
+TEST_CASE("Cholesky solve: known 3x3 SPD system", "[cholesky]") {
+    // A = [[25, 15, -5], [15, 18, 0], [-5, 0, 11]], b = [35, 33, 6]
+    // Expected solution: x = [1, 1, 1]  (25+15-5=35, 15+18+0=33, -5+0+11=6)
+    Matrix A = make(3, 3, {
+        25, 15, -5,
+        15, 18,  0,
+        -5,  0, 11
+    });
+    std::vector<double> b = {35, 33, 6};
+    std::vector<double> x = Cholesky::solve(A, b);
+
+    REQUIRE(std::abs(x[0] - 1.0) < 1e-9);
+    REQUIRE(std::abs(x[1] - 1.0) < 1e-9);
+    REQUIRE(std::abs(x[2] - 1.0) < 1e-9);
+}
+
+TEST_CASE("Cholesky throws on non-SPD matrix", "[cholesky]") {
+    // Indefinite matrix: eigenvalues are not all positive
+    Matrix A = make(3, 3, {
+        1, 2, 3,
+        2, 1, 4,
+        3, 4, 1
+    });
+    REQUIRE_THROWS(Cholesky::decompose(A));
+}
+
+TEST_CASE("Cholesky throws on non-square matrix", "[cholesky]") {
+    Matrix A(2, 3);
+    REQUIRE_THROWS(Cholesky::decompose(A));
+}
+
+TEST_CASE("Cholesky decomposes identity matrix", "[cholesky]") {
+    Matrix eye(3, 3);
+    eye.set(0,0,1); eye.set(1,1,1); eye.set(2,2,1);
+    Matrix L = Cholesky::decompose(eye);
+    // L of identity should be identity
+    REQUIRE(L == eye);
+}
+
+TEST_CASE("Cholesky solve 4x4 system", "[cholesky]") {
+    // Diagonally dominant SPD: A[i][j] = (i==j ? n+1 : 1)
+    // 4x4 with diagonal 5, off-diagonal 1:  solution = 1/(n+4) * ones
+    Matrix A = make(4, 4, {
+        5, 1, 1, 1,
+        1, 5, 1, 1,
+        1, 1, 5, 1,
+        1, 1, 1, 5
+    });
+    std::vector<double> b = {8, 8, 8, 8};
+    std::vector<double> x = Cholesky::solve(A, b);
+
+    // Each row: 5*x + 3*x = 8x = 8 → x = 1
+    for (int i = 0; i < 4; i++) {
+        REQUIRE(std::abs(x[i] - 1.0) < 1e-9);
+    }
+}
+
+// ─── QR Decomposition ────────────────────────────────────────────────────────
+
+TEST_CASE("QR decompose 3x3: verify A = Q*R", "[qr]") {
+    Matrix A = make(3, 3, {
+        12, -51,   4,
+         6, 167, -68,
+        -4,  24, -41
+    });
+    QR::Decomposition qr = QR::decompose(A);
+    Matrix product = qr.Q * qr.R;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++)
+            REQUIRE(std::abs(product.get(i,j) - A.get(i,j)) < 1e-9);
+}
+
+TEST_CASE("QR decompose: Q is orthogonal (Q^T*Q = I)", "[qr]") {
+    Matrix A = make(3, 3, {
+        12, -51,   4,
+         6, 167, -68,
+        -4,  24, -41
+    });
+    QR::Decomposition qr = QR::decompose(A);
+    Matrix QTQ = qr.Q.transpose() * qr.Q;
+
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < 3; j++) {
+            double expected = (i == j) ? 1.0 : 0.0;
+            REQUIRE(std::abs(QTQ.get(i,j) - expected) < 1e-9);
+        }
+}
+
+TEST_CASE("QR decompose: R is upper triangular", "[qr]") {
+    Matrix A = make(3, 3, {
+        1, 2, 3,
+        4, 5, 6,
+        7, 8, 10  // non-singular
+    });
+    QR::Decomposition qr = QR::decompose(A);
+
+    // Below diagonal should be zero
+    for (int i = 0; i < 3; i++)
+        for (int j = 0; j < i; j++)
+            REQUIRE(std::abs(qr.R.get(i,j)) < 1e-9);
+}
+
+TEST_CASE("QR solve: square 3x3 system", "[qr]") {
+    Matrix A = make(3, 3, {
+        2, 1, 1,
+        3, 2, 1,
+        2, 1, 2
+    });
+    // Solution: x = [1, 1, 1] → Ax = [4, 6, 5]
+    std::vector<double> b = {4, 6, 5};
+    std::vector<double> x = QR::solve(A, b);
+
+    REQUIRE(std::abs(x[0] - 1.0) < 1e-9);
+    REQUIRE(std::abs(x[1] - 1.0) < 1e-9);
+    REQUIRE(std::abs(x[2] - 1.0) < 1e-9);
+}
+
+TEST_CASE("QR solve: overdetermined 4x2 least-squares", "[qr]") {
+    // Fit y = a + b*x through points (0,1), (1,2), (2,3), (3,4)
+    // A = [[1,0],[1,1],[1,2],[1,3]], b = [1,2,3,4]
+    // Exact solution: a=1, b=1
+    Matrix A = make(4, 2, {
+        1, 0,
+        1, 1,
+        1, 2,
+        1, 3
+    });
+    std::vector<double> b = {1, 2, 3, 4};
+    std::vector<double> x = QR::solve(A, b);
+
+    REQUIRE(std::abs(x[0] - 1.0) < 1e-9);
+    REQUIRE(std::abs(x[1] - 1.0) < 1e-9);
+}
+
+TEST_CASE("QR throws on m < n", "[qr]") {
+    Matrix A(2, 3);
+    REQUIRE_THROWS(QR::decompose(A));
+}
+
+TEST_CASE("QR throws on rank-deficient matrix", "[qr]") {
+    // Rank 1 matrix (all rows are multiples of [1,2])
+    Matrix A = make(3, 2, {
+        1, 2,
+        2, 4,
+        3, 6
+    });
+    REQUIRE_THROWS(QR::decompose(A));
+}
+
+// ─── Newton Interpolation ─────────────────────────────────────────────────────
+
+TEST_CASE("Newton matches Lagrange on 4-point data", "[interpolation]") {
+    // Classic test: f(x) = x^3 sampled at x = 0,1,2,3
+    std::vector<double> x = {0, 1, 2, 3};
+    std::vector<double> y = {0, 1, 8, 27};
+    double query = 1.5;
+
+    double lag = Interpolation::lagrange(x, y, query);
+    double newt = Interpolation::newton(x, y, query);
+
+    REQUIRE(std::abs(newt - lag) < 1e-9);
+}
+
+TEST_CASE("Newton interpolates linear function exactly", "[interpolation]") {
+    // f(x) = 2x + 3 — any interpolation must recover this exactly
+    std::vector<double> x = {0, 1, 2, 4};
+    std::vector<double> y = {3, 5, 7, 11};
+
+    REQUIRE(std::abs(Interpolation::newton(x, y, 0.0) - 3.0)  < 1e-9);
+    REQUIRE(std::abs(Interpolation::newton(x, y, 1.5) - 6.0)  < 1e-9);
+    REQUIRE(std::abs(Interpolation::newton(x, y, 3.0) - 9.0)  < 1e-9);
+}
+
+TEST_CASE("Newton interpolates cubic polynomial exactly", "[interpolation]") {
+    // f(x) = x^3 - 2x + 1; 4 data points determine it exactly
+    std::vector<double> x = {-2, -1, 0, 1};
+    std::vector<double> y = {-3,  2, 1, 0};  // f(-2)=-8+4+1=-3, f(-1)=-1+2+1=2, f(0)=1, f(1)=0
+
+    // Verify at a known point: f(2) = 8 - 4 + 1 = 5
+    REQUIRE(std::abs(Interpolation::newton(x, y, 2.0) - 5.0) < 1e-9);
+}
+
+TEST_CASE("Newton with single data point returns that value", "[interpolation]") {
+    std::vector<double> x = {3.0};
+    std::vector<double> y = {7.5};
+    REQUIRE(std::abs(Interpolation::newton(x, y, 99.0) - 7.5) < 1e-9);
+}
+
+TEST_CASE("Newton throws on empty data", "[interpolation]") {
+    std::vector<double> x, y;
+    REQUIRE_THROWS(Interpolation::newton(x, y, 0.0));
+}
+
+TEST_CASE("Newton throws on size mismatch", "[interpolation]") {
+    std::vector<double> x = {1, 2, 3};
+    std::vector<double> y = {1, 2};  // wrong size
+    REQUIRE_THROWS(Interpolation::newton(x, y, 0.0));
+}
+
+// ─── Inverse Power Method ────────────────────────────────────────────────────
+
+TEST_CASE("Inverse power method: 2x2 known smallest eigenvalue", "[eigenpower]") {
+    // A = [[2, 1], [1, 2]]: eigenvalues are 1 and 3; smallest = 1
+    Matrix A = make(2, 2, {2, 1, 1, 2});
+    std::vector<double> eigvec;
+    double lambda = EigenPower::inverseMethod(A, eigvec);
+
+    REQUIRE(std::abs(lambda - 1.0) < 1e-6);
+}
+
+TEST_CASE("Inverse power method: 3x3 diagonal — smallest eigenvalue", "[eigenpower]") {
+    // Diagonal matrix: eigenvalues are exactly the diagonal entries
+    // A = diag(5, 2, 8): smallest = 2
+    Matrix A = make(3, 3, {
+        5, 0, 0,
+        0, 2, 0,
+        0, 0, 8
+    });
+    std::vector<double> eigvec;
+    double lambda = EigenPower::inverseMethod(A, eigvec);
+
+    REQUIRE(std::abs(lambda - 2.0) < 1e-6);
+}
+
+TEST_CASE("Inverse power method: reports iteration count", "[eigenpower]") {
+    Matrix A = make(2, 2, {2, 1, 1, 2});
+    std::vector<double> eigvec;
+    int iters = 0;
+    double lambda = EigenPower::inverseMethod(A, eigvec, 1e-9, 1000, iters);
+
+    REQUIRE(std::abs(lambda - 1.0) < 1e-6);
+    REQUIRE(iters > 0);
+    REQUIRE(iters < 1000);  // should converge well before limit
+}
+
+TEST_CASE("Inverse power method: smallest < largest (power method)", "[eigenpower]") {
+    // A = [[4, 1], [1, 3]]: eigenvalues ≈ 4.618 and 2.382
+    // inverse method gives smallest ≈ 2.382, power method gives largest ≈ 4.618
+    Matrix A = make(2, 2, {4, 1, 1, 3});
+    std::vector<double> eigvecInv, eigvecPow;
+
+    double smallest = EigenPower::inverseMethod(A, eigvecInv);
+    double largest  = EigenPower::powerMethod(A, eigvecPow);
+
+    REQUIRE(smallest < largest);
+    // Both should be positive for this SPD matrix
+    REQUIRE(smallest > 0.0);
+    REQUIRE(largest  > 0.0);
+}
+
+TEST_CASE("Inverse power method throws on non-square matrix", "[eigenpower]") {
+    Matrix A(2, 3);
+    std::vector<double> eigvec;
+    REQUIRE_THROWS(EigenPower::inverseMethod(A, eigvec));
 }

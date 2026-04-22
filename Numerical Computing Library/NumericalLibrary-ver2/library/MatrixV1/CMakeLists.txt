@@ -25,6 +25,8 @@ add_library(matrix_lib STATIC
     src/solvers/GaussJacobi.cpp
     src/solvers/GaussSeidel.cpp
     src/solvers/LUDecomposition.cpp
+    src/solvers/Cholesky.cpp
+    src/solvers/QR.cpp
 
     src/numerical/Eigen.cpp
     src/numerical/EigenPower.cpp

@@ -1,7 +1,6 @@
 #include "../../include/solvers/QR.hpp"
 #include <cmath>
 #include <stdexcept>
-#include <algorithm>
 
 // Helper: compute L2 norm of a vector
 static double vectorL2Norm(const std::vector<double>& v) {
@@ -12,7 +11,7 @@ static double vectorL2Norm(const std::vector<double>& v) {
     return std::sqrt(sum);
 }
 
-// Helper: compute dot product
+// Helper: compute dot product of two vectors
 static double dotProduct(const std::vector<double>& a, const std::vector<double>& b) {
     double sum = 0.0;
     for (size_t i = 0; i < a.size(); i++) {
@@ -21,139 +20,85 @@ static double dotProduct(const std::vector<double>& a, const std::vector<double>
     return sum;
 }
 
+// QR decomposition using Modified Gram-Schmidt (MGS)
+// MGS is more numerically stable than Classical Gram-Schmidt.
+// For each column j, we orthogonalize it against all previous Q columns,
+// and — crucially — we update the *working* column after each projection
+// (modified GS) rather than computing all projections from the original column
+// (classical GS). This reduces loss of orthogonality.
 QR::Decomposition QR::decompose(const Matrix& A) {
     int m = A.getRows();
     int n = A.getCols();
-    
+
     if (m < n) {
         throw std::runtime_error("QR: Matrix must have m >= n (more rows than columns)");
     }
-    
-    // Start with A as the working matrix, will build Q and R
-    Matrix Q = A;  // We'll overwrite this with Q columns
+
+    // Working copy — columns will be modified in-place during orthogonalization
+    Matrix W = A;
+    Matrix Q(m, n);
     Matrix R(n, n);
-    
-    // Householder QR: process each column
+
     for (int j = 0; j < n; j++) {
-        // Extract column j from row j onwards
-        std::vector<double> x(m - j);
-        for (int i = j; i < m; i++) {
-            x[i - j] = Q.get(i, j);
-        }
-        
-        // Compute norm
-        double sigma = vectorL2Norm(x);
-        
-        if (sigma < 1e-12) {
-            throw std::runtime_error("QR: Matrix appears to be rank-deficient at column " + std::to_string(j));
-        }
-        
-        // Householder vector: v = x + sign(x[0]) * sigma * e_1
-        std::vector<double> v = x;
-        v[0] += (x[0] >= 0 ? 1 : -1) * sigma;
-        
-        // Normalize v
-        double v_norm = vectorL2Norm(v);
-        if (v_norm > 1e-12) {
-            for (double& val : v) {
-                val /= v_norm;
-            }
-        }
-        
-        // Apply Householder transformation to columns j..n-1 of Q
-        for (int k = j; k < n; k++) {
-            // Extract column k from row j onwards
-            std::vector<double> col(m - j);
-            for (int i = j; i < m; i++) {
-                col[i - j] = Q.get(i, k);
-            }
-            
-            // Compute projection: 2 * (v^T * col) * v
-            double vT_col = dotProduct(v, col);
-            
-            // Update column: col = col - 2 * (v^T * col) * v
-            for (int i = 0; i < (int)col.size(); i++) {
-                col[i] -= 2.0 * vT_col * v[i];
-            }
-            
-            // Write back to Q
-            for (int i = j; i < m; i++) {
-                Q.set(i, k, col[i - j]);
-            }
-        }
-        
-        // Extract R[j][j] = ||x||
-        R.set(j, j, sigma);
-        
-        // Extract R[j][k] for k > j from transformed Q
-        for (int k = j + 1; k < n; k++) {
-            R.set(j, k, Q.get(j, k));
-        }
-    }
-    
-    // Now Q contains the QR factors but in a form we need to extract
-    // For simplicity, use a different approach: classical Gram-Schmidt
-    // (less stable but simpler to implement correctly)
-    
-    // Reset and use modified Gram-Schmidt
-    Matrix A_copy = A;
-    Matrix Q_gs(m, n);
-    Matrix R_gs(n, n);
-    
-    for (int j = 0; j < n; j++) {
-        // Extract column j
+        // Extract working column j
         std::vector<double> col(m);
         for (int i = 0; i < m; i++) {
-            col[i] = A_copy.get(i, j);
+            col[i] = W.get(i, j);
         }
-        
-        // Gram-Schmidt: orthogonalize against previous columns
-        for (int i = 0; i < j; i++) {
-            // Get Q column i
-            std::vector<double> q_i(m);
-            for (int k = 0; k < m; k++) {
-                q_i[k] = Q_gs.get(k, i);
+
+        // Modified Gram-Schmidt: orthogonalize against all previous Q columns
+        for (int k = 0; k < j; k++) {
+            // Build Q column k
+            std::vector<double> q_k(m);
+            for (int i = 0; i < m; i++) {
+                q_k[i] = Q.get(i, k);
             }
-            
-            // Compute R[i][j] = Q[:,i]^T * A[:,j]
-            double r_ij = dotProduct(q_i, col);
-            R_gs.set(i, j, r_ij);
-            
-            // Subtract: col = col - r_ij * Q[:,i]
-            for (int k = 0; k < m; k++) {
-                col[k] -= r_ij * q_i[k];
+
+            // R[k][j] = q_k^T * col  (projection coefficient)
+            double r_kj = dotProduct(q_k, col);
+            R.set(k, j, r_kj);
+
+            // Subtract projection: col = col - r_kj * q_k
+            for (int i = 0; i < m; i++) {
+                col[i] -= r_kj * q_k[i];
             }
         }
-        
-        // Normalize current column
+
+        // Compute norm of residual column
         double norm = vectorL2Norm(col);
         if (norm < 1e-12) {
-            throw std::runtime_error("QR: Matrix appears to be rank-deficient at column " + std::to_string(j));
+            throw std::runtime_error(
+                "QR: Matrix appears to be rank-deficient at column " + std::to_string(j));
         }
-        
-        R_gs.set(j, j, norm);
-        
-        // Store normalized column in Q
+
+        // R[j][j] = norm
+        R.set(j, j, norm);
+
+        // Normalize and store as Q column j
         for (int i = 0; i < m; i++) {
-            Q_gs.set(i, j, col[i] / norm);
+            Q.set(i, j, col[i] / norm);
         }
     }
-    
-    return {Q_gs, R_gs};
+
+    return {Q, R};
 }
 
+// Solve Ax = b via QR decomposition.
+// For square systems (m == n): exact solution.
+// For overdetermined systems (m > n): least-squares solution  min ||Ax - b||_2.
+// Both cases reduce to solving  R x = Q^T b  by back-substitution.
 std::vector<double> QR::solve(const Matrix& A, const std::vector<double>& b) {
     int m = A.getRows();
     int n = A.getCols();
-    
-    if ((int)b.size() != m) {
+
+    if (static_cast<int>(b.size()) != m) {
         throw std::runtime_error("QR solve: b must have m elements");
     }
-    
-    // Compute QR decomposition
+
+    // Step 1: Compute QR
     Decomposition qr = decompose(A);
-    
-    // Compute c = Q^T * b
+
+    // Step 2: Compute c = Q^T * b  (n-vector)
     std::vector<double> c(n);
     for (int i = 0; i < n; i++) {
         double sum = 0.0;
@@ -162,22 +107,22 @@ std::vector<double> QR::solve(const Matrix& A, const std::vector<double>& b) {
         }
         c[i] = sum;
     }
-    
-    // Solve R*x = c by back substitution
+
+    // Step 3: Solve R*x = c by back substitution
     std::vector<double> x(n);
     for (int i = n - 1; i >= 0; i--) {
         double sum = c[i];
         for (int j = i + 1; j < n; j++) {
             sum -= qr.R.get(i, j) * x[j];
         }
-        
+
         double r_ii = qr.R.get(i, i);
         if (std::abs(r_ii) < 1e-12) {
-            throw std::runtime_error("QR solve: Singular matrix encountered");
+            throw std::runtime_error("QR solve: Singular R diagonal encountered");
         }
-        
+
         x[i] = sum / r_ii;
     }
-    
+
     return x;
 }
