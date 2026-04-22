@@ -1,4 +1,4 @@
-# REPORT-003: Generalise Divide (N×N)
+git # REPORT-003: Generalise Divide (N×N)
 
 **Plan:** PLAN-003
 **Completed:** 2026-04-23
