@@ -1,5 +1,6 @@
 #include "catch2/catch_amalgamated.hpp"
 #include "Matrix.hpp"
+#include "../include/operations/Divide.hpp"
 
 // ─── Helper: build a matrix from an initializer list ─────────────────────────
 static Matrix make(int r, int c, std::vector<double> vals) {
@@ -293,4 +294,42 @@ TEST_CASE("operator<< writes matrix to stream", "[operators]") {
     std::string out = oss.str();
     REQUIRE(out.find("1") != std::string::npos);
     REQUIRE(out.find("4") != std::string::npos);
+}
+
+// ─── Divide (N×N) ─────────────────────────────────────────────────────────────
+
+TEST_CASE("Divide 2x2 matrices", "[divide]") {
+    Matrix A = make(2, 2, {1, 2, 3, 4});
+    Matrix B = make(2, 2, {2, 0, 0, 1});
+    Matrix result = Divide::compute(A, B);
+    // inv(B) = [[0.5, 0], [0, 1]]
+    // A * inv(B) = [[1,2],[3,4]] * [[0.5,0],[0,1]] = [[0.5, 2], [1.5, 4]]
+    Matrix expected = make(2, 2, {0.5, 2, 1.5, 4});
+    REQUIRE(result == expected);
+}
+
+TEST_CASE("Divide 3x3 matrices", "[divide]") {
+    Matrix A = make(2, 3, {1, 2, 3, 4, 5, 6});  // 2x3
+    Matrix B = make(3, 3, {1, 0, 0, 0, 1, 0, 0, 0, 1});  // identity
+    Matrix result = Divide::compute(A, B);
+    // inv(B) = identity, so result = A
+    REQUIRE(result == A);
+}
+
+TEST_CASE("Divide throws on dimension mismatch", "[divide]") {
+    Matrix A = make(2, 2, {1, 2, 3, 4});  // 2x2
+    Matrix B = make(3, 3, {1, 0, 0, 0, 1, 0, 0, 0, 1});  // 3x3
+    REQUIRE_THROWS_AS(Divide::compute(A, B), std::invalid_argument);
+}
+
+TEST_CASE("Divide throws on singular matrix", "[divide]") {
+    Matrix A = make(2, 2, {1, 2, 3, 4});
+    Matrix B = make(2, 2, {1, 2, 2, 4});  // singular (rank 1)
+    REQUIRE_THROWS_AS(Divide::compute(A, B), std::runtime_error);
+}
+
+TEST_CASE("Divide throws on non-square matrix", "[divide]") {
+    Matrix A = make(2, 2, {1, 2, 3, 4});
+    Matrix B = make(2, 3, {1, 2, 3, 4, 5, 6});  // 2x3
+    REQUIRE_THROWS_AS(Divide::compute(A, B), std::runtime_error);
 }
