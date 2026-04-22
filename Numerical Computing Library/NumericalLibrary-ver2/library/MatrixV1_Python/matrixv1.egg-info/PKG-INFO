@@ -1,0 +1,7 @@
+Metadata-Version: 2.4
+Name: matrixv1
+Version: 1.0.0
+Summary: Numerical computing library — matrix operations, linear solvers, eigenvalue methods, interpolation
+Requires-Python: >=3.10
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
