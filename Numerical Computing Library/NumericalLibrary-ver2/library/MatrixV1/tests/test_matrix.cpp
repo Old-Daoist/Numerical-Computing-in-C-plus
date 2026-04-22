@@ -1,6 +1,9 @@
 #include "catch2/catch_amalgamated.hpp"
 #include "Matrix.hpp"
 #include "../include/operations/Divide.hpp"
+#include "../include/solvers/SolveLinearEquation.hpp"
+#include "../include/solvers/Cholesky.hpp"
+#include "../include/solvers/QR.hpp"
 
 // ─── Helper: build a matrix from an initializer list ─────────────────────────
 static Matrix make(int r, int c, std::vector<double> vals) {
@@ -332,4 +335,127 @@ TEST_CASE("Divide throws on non-square matrix", "[divide]") {
     Matrix A = make(2, 2, {1, 2, 3, 4});
     Matrix B = make(2, 3, {1, 2, 3, 4, 5, 6});  // 2x3
     REQUIRE_THROWS_AS(Divide::compute(A, B), std::runtime_error);
+}
+
+// ─── Gauss-Jacobi Convergence ─────────────────────────────────────────────────
+
+TEST_CASE("Jacobi converges within tolerance", "[solvers]") {
+    // Diagonally dominant system: convergence guaranteed
+    Matrix A = make(3, 3, {
+        10, 1, 1,
+        1, 10, 1,
+        1, 1, 10
+    });
+    std::vector<double> b = {12, 12, 12};
+    
+    int iters = 0;
+    std::vector<double> x = GaussJacobi::solve(A, b, 1e-6, 1000, iters);
+    
+    // Solution should be approximately [1, 1, 1]
+    REQUIRE(std::abs(x[0] - 1.0) < 1e-5);
+    REQUIRE(std::abs(x[1] - 1.0) < 1e-5);
+    REQUIRE(std::abs(x[2] - 1.0) < 1e-5);
+    REQUIRE(iters < 1000);  // Should converge before max iterations
+}
+
+TEST_CASE("Jacobi iteration count reflects convergence speed", "[solvers]") {
+    Matrix A = make(3, 3, {
+        10, 1, 1,
+        1, 10, 1,
+        1, 1, 10
+    });
+    std::vector<double> b = {12, 12, 12};
+    
+    int iters_tight = 0, iters_loose = 0;
+    
+    // Tight tolerance should need more iterations
+    GaussJacobi::solve(A, b, 1e-10, 1000, iters_tight);
+    
+    // Loose tolerance should need fewer iterations
+    GaussJacobi::solve(A, b, 1e-3, 1000, iters_loose);
+    
+    REQUIRE(iters_tight > iters_loose);
+}
+
+TEST_CASE("Jacobi hits max iterations if system difficult", "[solvers]") {
+    // Nearly singular system (hard to converge)
+    Matrix A = make(2, 2, {
+        1, 1-1e-10,
+        1-1e-10, 1
+    });
+    std::vector<double> b = {2, 2};
+    
+    int iters = 0;
+    GaussJacobi::solve(A, b, 1e-12, 10, iters);
+    
+    REQUIRE(iters == 10);  // Should hit the max
+}
+
+// ─── Gauss-Seidel Convergence ────────────────────────────────────────────────
+
+TEST_CASE("Seidel converges within tolerance", "[solvers]") {
+    // Diagonally dominant system: convergence guaranteed
+    Matrix A = make(3, 3, {
+        10, 1, 1,
+        1, 10, 1,
+        1, 1, 10
+    });
+    std::vector<double> b = {12, 12, 12};
+    
+    int iters = 0;
+    std::vector<double> x = GaussSeidel::solve(A, b, 1e-6, 1000, iters);
+    
+    // Solution should be approximately [1, 1, 1]
+    REQUIRE(std::abs(x[0] - 1.0) < 1e-5);
+    REQUIRE(std::abs(x[1] - 1.0) < 1e-5);
+    REQUIRE(std::abs(x[2] - 1.0) < 1e-5);
+    REQUIRE(iters < 1000);  // Should converge before max iterations
+}
+
+TEST_CASE("Seidel typically converges faster than Jacobi", "[solvers]") {
+    // Diagonally dominant system
+    Matrix A = make(3, 3, {
+        10, 1, 1,
+        1, 10, 1,
+        1, 1, 10
+    });
+    std::vector<double> b = {12, 12, 12};
+    
+    int jacobi_iters = 0, seidel_iters = 0;
+    
+    GaussJacobi::solve(A, b, 1e-6, 1000, jacobi_iters);
+    GaussSeidel::solve(A, b, 1e-6, 1000, seidel_iters);
+    
+    // Seidel should typically converge faster (may sometimes be equal)
+    REQUIRE(seidel_iters <= jacobi_iters);
+}
+
+TEST_CASE("Backward compatibility: Jacobi with fixed iterations", "[solvers]") {
+    Matrix A = make(3, 3, {
+        10, 1, 1,
+        1, 10, 1,
+        1, 1, 10
+    });
+    std::vector<double> b = {12, 12, 12};
+    
+    // Old API: fixed iteration count (default 25)
+    std::vector<double> x = GaussJacobi::solve(A, b);
+    
+    // Should still work and produce a reasonable result
+    REQUIRE(std::abs(x[0] - 1.0) < 0.1);  // Loose tolerance for 25 iterations
+}
+
+TEST_CASE("Backward compatibility: Seidel with fixed iterations", "[solvers]") {
+    Matrix A = make(3, 3, {
+        10, 1, 1,
+        1, 10, 1,
+        1, 1, 10
+    });
+    std::vector<double> b = {12, 12, 12};
+    
+    // Old API: fixed iteration count (default 25)
+    std::vector<double> x = GaussSeidel::solve(A, b);
+    
+    // Should still work and produce a reasonable result
+    REQUIRE(std::abs(x[0] - 1.0) < 0.1);  // Loose tolerance for 25 iterations
 }
