@@ -1,0 +1,110 @@
+===============================
+NUMERICAL LIBRARY (PYTHON) COMMANDS
+===============================
+
+# -------------------------------
+# 1. NAVIGATE TO PROJECT
+# -------------------------------
+cd "D:\SCMS\C++ programs\Numerical Computing Library\NumericalLibrary-ver2\library\MatrixV1_Python"
+
+
+# -------------------------------
+# 2. INSTALL PACKAGE (EDITABLE MODE)
+# -------------------------------
+pip install -e .
+
+
+# -------------------------------
+# 3. INSTALL TESTING TOOL
+# -------------------------------
+pip install pytest
+
+
+# -------------------------------
+# 4. VERIFY PYTHON (IMPORTANT)
+# -------------------------------
+pip -V
+
+# (Check path like D:\Python\...)
+
+
+# -------------------------------
+# 5. RUN ALL TESTS (SAFE METHOD)
+# -------------------------------
+D:\Python\python.exe -m pytest -v
+
+
+# -------------------------------
+# 6. ALTERNATIVE TEST RUN (if PATH is fixed)
+# -------------------------------
+pytest -v
+
+# OR
+python -m pytest -v
+
+
+# -------------------------------
+# 7. RUN SPECIFIC TEST FILE
+# -------------------------------
+D:\Python\python.exe -m pytest tests/test_core.py -v
+
+
+# -------------------------------
+# 8. RUN SINGLE TEST FUNCTION
+# -------------------------------
+D:\Python\python.exe -m pytest tests/test_core.py::test_matrix_addition -v
+
+
+# -------------------------------
+# 9. FREEZE DEPENDENCIES
+# -------------------------------
+pip freeze > requirements.txt
+
+
+# -------------------------------
+# 10. RUN MAIN PROGRAM (IF EXISTS)
+# -------------------------------
+python main.py
+
+
+# -------------------------------
+# 11. GIT: SAVE CURRENT STABLE VERSION
+# -------------------------------
+git add .
+git commit -m "MatrixV1 Python stable release - 104 tests passing"
+
+
+# -------------------------------
+# 12. CREATE VERSION TAG
+# -------------------------------
+git tag -a v1.0-python -m "Stable Python version with full tests"
+
+
+# -------------------------------
+# 13. CREATE VIRTUAL ENV (OPTIONAL CLEAN SETUP)
+# -------------------------------
+D:\Python\python.exe -m venv .venv
+
+
+# ACTIVATE VENV
+.\.venv\Scripts\activate
+
+
+# INSTALL INSIDE VENV
+pip install -e .
+pip install pytest
+
+
+# RUN TESTS IN VENV
+pytest -v
+
+
+# -------------------------------
+# 14. DEBUG PYTHON PATH ISSUE
+# -------------------------------
+where python
+
+
+# -------------------------------
+# END
+# -------------------------------
