@@ -1,6 +1,6 @@
 # PLAN-004: Iterative Solver Convergence
 
-**Created:** 2026-04-23
+**Created:** 2026-04-21
 **Status:** Draft
 **Addresses:** The `GaussJacobi` and `GaussSeidel` iterative solvers currently use a fixed iteration count with no convergence checking. This limits their practical use — they may over-iterate on well-conditioned systems (wasting computation) or under-iterate on ill-conditioned ones. This plan adds tolerance-based convergence detection and iteration reporting.
 

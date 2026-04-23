@@ -1,7 +1,7 @@
 # REPORT-005: New Solvers — Cholesky & QR Decomposition
 
 **Plan:** PLAN-005
-**Completed:** 2026-04-23
+**Completed:** 2026-04-21
 **Author:** Claude Opus 4.6
 
 ---

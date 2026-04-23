@@ -1,6 +1,6 @@
 # PLAN-003: Generalise Divide (N×N)
 
-**Created:** 2026-04-23
+**Created:** 2026-04-21
 **Status:** Draft
 **Addresses:** The `Divide` operation is hardcoded to 2×2 matrices only, preventing its use on larger matrices. With `Matrix::inverse()` added in PLAN-002, this restriction can be removed, enabling N×N matrix "division" via `A * inv(B)`.
 

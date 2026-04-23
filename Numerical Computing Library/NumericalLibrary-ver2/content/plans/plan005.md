@@ -1,6 +1,6 @@
 # PLAN-005: New Solvers — Cholesky & QR Decomposition
 
-**Created:** 2026-04-23
+**Created:** 2026-04-21
 **Status:** Draft
 **Addresses:** The library currently has LU decomposition for general matrices but lacks specialized decompositions for symmetric positive-definite (SPD) and rectangular matrices. This plan adds Cholesky (for SPD systems) and QR (for least-squares and rectangular systems), two fundamental decompositions in numerical computing.
 

@@ -1,6 +1,6 @@
 # PLAN-008: Port Library to Python
 
-**Created:** 2026-04-23
+**Created:** 2026-04-22
 **Status:** Draft
 **Addresses:** Translate the entire MatrixV1 C++ library into an idiomatic Python package — same algorithms, same module structure, same test coverage — with a Python-native interface.
 

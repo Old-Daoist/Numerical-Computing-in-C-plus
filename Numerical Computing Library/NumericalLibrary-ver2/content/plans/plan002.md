@@ -1,6 +1,6 @@
 # PLAN-002: Matrix Class Modernisation
 
-**Created:** 2026-04-23
+**Created:** 2026-04-20
 **Status:** Draft
 **Addresses:** The `Matrix` class is a bare data container with no operator support, no safety checks, and no utility methods. Every algorithm in the library receives `const Matrix&` but cannot use natural C++ syntax — callers must go through static helper classes for every operation. This plan upgrades `Matrix` into a first-class numerical object.
 

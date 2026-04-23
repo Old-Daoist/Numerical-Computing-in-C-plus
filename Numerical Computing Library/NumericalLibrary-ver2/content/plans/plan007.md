@@ -1,6 +1,6 @@
 # PLAN-007: CLI / UX Improvements
 
-**Created:** 2026-04-23
+**Created:** 2026-04-22
 **Status:** Draft
 **Addresses:** Feature 7 from specs.md — fix `main.cpp` indentation, modernise the menu to reflect all features added in PLANs 002–006, add convergence feedback for iterative solvers, and allow solver vector results to be saved to file.
 
