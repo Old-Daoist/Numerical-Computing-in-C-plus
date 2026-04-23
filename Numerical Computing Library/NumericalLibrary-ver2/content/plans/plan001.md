@@ -1,7 +1,7 @@
 # PLAN-001: Build System & Repo Setup
 
 **Created:** 2026-04-20
-**Status:** Draft
+**Status:** Completed
 **Addresses:** The project has no build system, no test scaffolding, and Windows-style CRLF line endings throughout. Nothing in Feature 1–7 can be built, tested, or CI-verified until this baseline exists.
 
 ---

@@ -13,6 +13,7 @@ from matrixv1.solvers.gauss_seidel import solve as seidel_solve
 from matrixv1.numerical.interpolation import lagrange, newton
 from matrixv1.numerical.eigen import gershgorin
 from matrixv1.numerical.eigen_power import power_method, inverse_method
+from matrixv1.numerical.least_squares import fit_line, fit_parabola
 
 
 # ── I/O helpers ───────────────────────────────────────────────────────────────
@@ -132,6 +133,11 @@ MENU = """
   ║  18. Gershgorin Eigenvalue Est.  ║
   ║  19. Power Method (dominant λ)   ║
   ║  20. Inverse Power (smallest λ)  ║
+  ╠══════════════════════════════════╣
+  ║        CURVE FITTING             ║
+  ╠══════════════════════════════════╣
+  ║  21. Least Squares — Line        ║
+  ║  22. Least Squares — Parabola    ║
   ╠══════════════════════════════════╣
   ║   0. Exit                        ║
   ╚══════════════════════════════════╝"""
@@ -260,6 +266,20 @@ def main():
                 print(f"  Smallest eigenvalue  = {lam:.10g}")
                 print(f"  Converged in {iters} iteration(s).")
                 print("  Eigenvector: " + "  ".join(f"{v:.6g}" for v in vec))
+
+            elif choice == 21:
+                n = int(input("  Number of data points: "))
+                xs = list(map(float, input("  Enter x values (space-separated): ").split()))
+                ys = list(map(float, input("  Enter y values (space-separated): ").split()))
+                a, b = fit_line(xs, ys)
+                print(f"  Fitted line:  y = {a:.10g} + {b:.10g}x")
+
+            elif choice == 22:
+                n = int(input("  Number of data points: "))
+                xs = list(map(float, input("  Enter x values (space-separated): ").split()))
+                ys = list(map(float, input("  Enter y values (space-separated): ").split()))
+                a, b, c = fit_parabola(xs, ys)
+                print(f"  Fitted curve: y = {a:.10g} + {b:.10g}x + {c:.10g}x\u00b2")
 
             else:
                 print("  Invalid choice — enter a number from the menu.")

@@ -31,6 +31,7 @@ add_library(matrix_lib STATIC
     src/numerical/Eigen.cpp
     src/numerical/EigenPower.cpp
     src/numerical/Interpolation.cpp
+    src/numerical/LeastSquares.cpp
 )
 
 target_include_directories(matrix_lib PUBLIC

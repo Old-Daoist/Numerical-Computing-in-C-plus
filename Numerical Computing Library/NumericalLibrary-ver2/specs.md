@@ -3,10 +3,9 @@
 > **Version:** 1.0
 > **Created:** 2026-04-21
 > **Last Updated:** 2026-04-23
-> **Status:** 🟡 In Planning
+> **Status:** 🟢 Active
 
 ---
-]
 
 ## Current Focus
 
@@ -153,14 +152,16 @@ The project is **functional but unpolished**. It compiles and runs as a console 
 
 | # | Feature | Status | Priority | Notes |
 |---|---|---|---|---|
-| 0 | Pre-Work: Build System + Repo Setup | [ ] | P0 | CMakeLists.txt, CRLF fix, folder structure |
-| 1 | Matrix Class Modernisation | [ ] | P0 | Operator overloading, bounds check, transpose, determinant, inverse |
-| 2 | Generalise Divide (N×N) | [ ] | P1 | Use `inverse()` from Feature 1; remove 2×2 restriction |
-| 3 | Iterative Solver Convergence | [ ] | P1 | Add tolerance + max-iter params to Jacobi & Seidel; report iteration count |
-| 4 | Automated Test Suite | [ ] | P0 | Catch2; cover all existing algorithms + Feature 1 additions |
-| 5 | New Solvers | [ ] | P2 | Cholesky decomposition, QR decomposition |
-| 6 | New Numerical Methods | [ ] | P2 | Newton's interpolation, inverse power method (smallest eigenvalue) |
-| 7 | CLI / UX Improvements | [ ] | P3 | Fix main.cpp indentation, add result saving for solvers, convergence output |
+| 0 | Pre-Work: Build System + Repo Setup | [x] | P0 | CMakeLists.txt, CRLF fix, folder structure |
+| 1 | Matrix Class Modernisation | [x] | P0 | Operator overloading, bounds check, transpose, determinant, inverse |
+| 2 | Generalise Divide (N×N) | [x] | P1 | Use `inverse()` from Feature 1; remove 2×2 restriction |
+| 3 | Iterative Solver Convergence | [x] | P1 | Add tolerance + max-iter params to Jacobi & Seidel; report iteration count |
+| 4 | Automated Test Suite | [x] | P0 | Catch2; cover all existing algorithms + Feature 1 additions |
+| 5 | New Solvers | [x] | P2 | Cholesky decomposition, QR decomposition |
+| 6 | New Numerical Methods | [x] | P2 | Newton's interpolation, inverse power method (smallest eigenvalue) |
+| 7 | CLI / UX Improvements | [x] | P3 | Fix main.cpp indentation, add result saving for solvers, convergence output |
+| 8 | Python Mirror Library | [x] | P2 | Full port of MatrixV1 to Python under `library/MatrixV1_Python/`; 104 pytest tests |
+| 9 | Least Squares Curve Fitting | [x] | P2 | `LeastSquares::fitLine()` and `fitParabola()` — straight line and parabola via normal equations |
 
 ---
 
@@ -355,3 +356,53 @@ Clean up `main.cpp` indentation, unify the menu style, and add result-saving for
 - [ ] Solver result can be saved to file from menu
 
 ---
+---
+
+# FEATURE 8 — Python Mirror Library
+
+## Goal
+
+Port the entire MatrixV1 C++ library to Python, preserving the same module structure, algorithm behaviour, and API conventions. Provide an installable package and a `main.py` CLI that mirrors `main.cpp`.
+
+## Additions
+
+- `matrixv1/` Python package under `library/MatrixV1_Python/`
+- Modules: `core/matrix.py`, `operations/`, `solvers/`, `numerical/`
+- `pyproject.toml` for `pip install -e .`
+- 104 pytest tests across 4 test files
+
+## Success Criteria
+
+- [x] `pip install -e .` succeeds in `MatrixV1_Python/`
+- [x] `pytest tests/` exits 0 with 104 tests passing
+- [x] `python main.py` runs the CLI with all 20 menu options functional
+
+---
+
+# FEATURE 9 — Least Squares Curve Fitting
+
+## Goal
+
+Add least squares curve fitting for a straight line (y = a + bx) and a parabola (y = a + bx + cx²) to both the C++ library and the Python mirror.  Both methods reduce to solving a small system of normal equations using the existing `GaussElimination::solve()` infrastructure.
+
+## Additions
+
+**C++:**
+- `include/numerical/LeastSquares.hpp` — `fitLine()` returning `std::pair<double,double>`, `fitParabola()` returning `std::tuple<double,double,double>`
+- `src/numerical/LeastSquares.cpp` — single-pass sum accumulation + normal equation solve
+- `main.cpp` menu options 21 (line) and 22 (parabola)
+- 13 new Catch2 tests
+
+**Python:**
+- `matrixv1/numerical/least_squares.py` — `fit_line()`, `fit_parabola()`
+- `main.py` menu options 21 and 22
+- 16 new pytest tests
+
+## Success Criteria
+
+- [x] `LeastSquares::fitLine({1,2,3,4,5}, {2,4,5,4,5})` returns `{a≈2.2, b≈0.6}` within 1e-6
+- [x] `LeastSquares::fitParabola({0,1,2,3}, {1,1.5,3.5,8.0})` returns `{a=1.05, b=-0.7, c=1.0}` within 1e-6
+- [x] Both functions throw `std::invalid_argument` on empty, mismatched, or underdetermined input
+- [x] `ctest` exits 0 with 97 test cases (81 existing + 13 new in MatrixV1; total was 81+13=94 before smoke tests; with smoke = 97), 0 failures
+- [x] `pytest tests/` exits 0 with 120 tests (104 existing + 16 new), 0 failures
+- [x] `main.cpp` options 21 and 22 functional; `main.py` options 21 and 22 functional

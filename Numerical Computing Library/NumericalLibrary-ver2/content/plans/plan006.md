@@ -1,7 +1,7 @@
 # PLAN-006: New Numerical Methods — Newton Interpolation & Inverse Power Method
 
 **Created:** 2026-04-22
-**Status:** In Progress
+**Status:** Completed
 **Addresses:** Feature 6 from specs.md — extending the numerical methods module with Newton's divided difference interpolation and the inverse power method for the smallest eigenvalue.
 
 ---

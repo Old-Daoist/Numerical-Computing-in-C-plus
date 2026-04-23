@@ -17,6 +17,7 @@
 #include "numerical/Interpolation.hpp"
 #include "numerical/Eigen.hpp"
 #include "numerical/EigenPower.hpp"
+#include "numerical/LeastSquares.hpp"
 
 // ─── Matrix input ─────────────────────────────────────────────────────────────
 
@@ -162,6 +163,11 @@ int main() {
         std::cout << "  ║  18. Gershgorin Eigenvalue Est.  ║\n";
         std::cout << "  ║  19. Power Method (dominant λ)   ║\n";
         std::cout << "  ║  20. Inverse Power (smallest λ)  ║\n";
+        std::cout << "  ╠══════════════════════════════════╣\n";
+        std::cout << "  ║        CURVE FITTING             ║\n";
+        std::cout << "  ╠══════════════════════════════════╣\n";
+        std::cout << "  ║  21. Least Squares — Line        ║\n";
+        std::cout << "  ║  22. Least Squares — Parabola    ║\n";
         std::cout << "  ╠══════════════════════════════════╣\n";
         std::cout << "  ║   0. Exit                        ║\n";
         std::cout << "  ╚══════════════════════════════════╝\n";
@@ -374,6 +380,38 @@ int main() {
                     std::cout << "  Eigenvector: ";
                     for (double v : eigenvector) { std::cout << v << "  "; }
                     std::cout << "\n";
+                    break;
+                }
+
+                // ── Curve fitting ─────────────────────────────────────────────
+                case 21: {
+                    int n;
+                    std::cout << "  Number of data points: ";
+                    std::cin >> n;
+                    std::vector<double> xs(n), ys(n);
+                    std::cout << "  Enter x values: ";
+                    for (int i = 0; i < n; i++) { std::cin >> xs[i]; }
+                    std::cout << "  Enter y values: ";
+                    for (int i = 0; i < n; i++) { std::cin >> ys[i]; }
+                    auto [a, b] = LeastSquares::fitLine(xs, ys);
+                    std::cout << "  Fitted line:  y = " << a
+                              << " + " << b << "x\n";
+                    break;
+                }
+
+                case 22: {
+                    int n;
+                    std::cout << "  Number of data points: ";
+                    std::cin >> n;
+                    std::vector<double> xs(n), ys(n);
+                    std::cout << "  Enter x values: ";
+                    for (int i = 0; i < n; i++) { std::cin >> xs[i]; }
+                    std::cout << "  Enter y values: ";
+                    for (int i = 0; i < n; i++) { std::cin >> ys[i]; }
+                    auto [a, b, c] = LeastSquares::fitParabola(xs, ys);
+                    std::cout << "  Fitted curve: y = " << a
+                              << " + " << b << "x"
+                              << " + " << c << "x\xc2\xb2\n";
                     break;
                 }
 

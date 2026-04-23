@@ -11,6 +11,7 @@ matrixv1/numerical/__init__.py
 matrixv1/numerical/eigen.py
 matrixv1/numerical/eigen_power.py
 matrixv1/numerical/interpolation.py
+matrixv1/numerical/least_squares.py
 matrixv1/operations/__init__.py
 matrixv1/operations/add.py
 matrixv1/operations/divide.py

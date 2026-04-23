@@ -15,6 +15,7 @@ from matrixv1.solvers.gauss_seidel import solve as seidel_solve
 from matrixv1.numerical.interpolation import lagrange, newton
 from matrixv1.numerical.eigen_power import power_method, inverse_method
 from matrixv1.numerical.eigen import gershgorin
+from matrixv1.numerical.least_squares import fit_line, fit_parabola
 
 __all__ = [
     "Matrix",
@@ -27,4 +28,5 @@ __all__ = [
     "lagrange", "newton",
     "power_method", "inverse_method",
     "gershgorin",
+    "fit_line", "fit_parabola",
 ]

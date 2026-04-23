@@ -123,3 +123,130 @@ def test_inverse_smaller_than_power():
 def test_inverse_method_raises_on_non_square():
     with pytest.raises(ValueError):
         inverse_method(Matrix(2, 3))
+
+
+# ── Least Squares — fit_line ──────────────────────────────────────────────────
+
+from matrixv1.numerical.least_squares import fit_line, fit_parabola
+
+
+def test_fit_line_classic_5_points():
+    # Standard OLS result: a=2.2, b=0.6
+    x = [1, 2, 3, 4, 5]
+    y = [2, 4, 5, 4, 5]
+    a, b = fit_line(x, y)
+    assert approx(a, 2.2)
+    assert approx(b, 0.6)
+
+
+def test_fit_line_exact_fit():
+    # y = 3 + 2x exactly
+    x = [0, 1, 2, 3, 4]
+    y = [3, 5, 7, 9, 11]
+    a, b = fit_line(x, y)
+    assert approx(a, 3.0)
+    assert approx(b, 2.0)
+
+
+def test_fit_line_negative_slope():
+    # y = 10 - 3x
+    x = [0, 1, 2, 3]
+    y = [10, 7, 4, 1]
+    a, b = fit_line(x, y)
+    assert approx(a, 10.0)
+    assert approx(b, -3.0)
+
+
+def test_fit_line_two_points():
+    x = [0, 2]
+    y = [1, 5]
+    a, b = fit_line(x, y)
+    assert approx(a, 1.0)
+    assert approx(b, 2.0)
+
+
+def test_fit_line_horizontal():
+    x = [1, 2, 3, 4, 5]
+    y = [4, 4, 4, 4, 4]
+    a, b = fit_line(x, y)
+    assert approx(b, 0.0)
+    assert approx(a, 4.0)
+
+
+def test_fit_line_raises_empty():
+    with pytest.raises(ValueError):
+        fit_line([], [])
+
+
+def test_fit_line_raises_mismatch():
+    with pytest.raises(ValueError):
+        fit_line([1, 2, 3], [1, 2])
+
+
+def test_fit_line_raises_too_few_points():
+    with pytest.raises(ValueError):
+        fit_line([1.0], [2.0])
+
+
+def test_fit_line_raises_singular():
+    # All x identical → singular normal matrix
+    with pytest.raises(ValueError):
+        fit_line([2, 2, 2], [1, 2, 3])
+
+
+# ── Least Squares — fit_parabola ──────────────────────────────────────────────
+
+def test_fit_parabola_exact_fit():
+    # y = 1 + 2x + 3x²
+    x = [0, 1, 2, 3, 4]
+    y = [1, 6, 17, 34, 57]
+    a, b, c = fit_parabola(x, y)
+    assert approx(a, 1.0)
+    assert approx(b, 2.0)
+    assert approx(c, 3.0)
+
+
+def test_fit_parabola_noisy_data():
+    # Data: {0,1,2,3} vs {1,1.5,3.5,8.0}
+    # OLS: a=1.05, b=-0.7, c=1.0 (verified via numpy.polyfit)
+    x = [0, 1, 2, 3]
+    y = [1, 1.5, 3.5, 8.0]
+    a, b, c = fit_parabola(x, y)
+    assert approx(a, 1.05)
+    assert approx(b, -0.7)
+    assert approx(c, 1.0)
+
+
+def test_fit_parabola_zero_quadratic():
+    # Linear data — c must be ~0
+    x = [0, 1, 2, 3, 4]
+    y = [2, 7, 12, 17, 22]
+    a, b, c = fit_parabola(x, y)
+    assert approx(a, 2.0)
+    assert approx(b, 5.0)
+    assert approx(c, 0.0)
+
+
+def test_fit_parabola_three_points_unique():
+    # y = x² exactly from 3 points
+    x = [0, 1, 2]
+    y = [0, 1, 4]
+    a, b, c = fit_parabola(x, y)
+    assert approx(a, 0.0)
+    assert approx(b, 0.0)
+    assert approx(c, 1.0)
+
+
+def test_fit_parabola_raises_empty():
+    with pytest.raises(ValueError):
+        fit_parabola([], [])
+
+
+def test_fit_parabola_raises_mismatch():
+    with pytest.raises(ValueError):
+        fit_parabola([1, 2, 3], [1, 2])
+
+
+def test_fit_parabola_raises_too_few_points():
+    with pytest.raises(ValueError):
+        fit_parabola([1, 2], [3, 4])

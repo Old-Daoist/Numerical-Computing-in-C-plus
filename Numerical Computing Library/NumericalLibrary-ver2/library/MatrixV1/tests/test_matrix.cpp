@@ -747,3 +747,138 @@ TEST_CASE("Inverse power method throws on non-square matrix", "[eigenpower]") {
     std::vector<double> eigvec;
     REQUIRE_THROWS(EigenPower::inverseMethod(A, eigvec));
 }
+
+// ─── Least Squares — fitLine ─────────────────────────────────────────────────
+
+#include "numerical/LeastSquares.hpp"
+
+TEST_CASE("fitLine: classic 5-point example (OLS textbook)", "[leastsquares]") {
+    // Data: {1,2,3,4,5} vs {2,4,5,4,5}
+    // Standard OLS: a ≈ 2.2, b ≈ 0.6
+    std::vector<double> x = {1, 2, 3, 4, 5};
+    std::vector<double> y = {2, 4, 5, 4, 5};
+    auto [a, b] = LeastSquares::fitLine(x, y);
+    REQUIRE(std::abs(a - 2.2) < 1e-6);
+    REQUIRE(std::abs(b - 0.6) < 1e-6);
+}
+
+TEST_CASE("fitLine: exact fit — data lies on a line", "[leastsquares]") {
+    // y = 3 + 2x exactly
+    std::vector<double> x = {0, 1, 2, 3, 4};
+    std::vector<double> y = {3, 5, 7, 9, 11};
+    auto [a, b] = LeastSquares::fitLine(x, y);
+    REQUIRE(std::abs(a - 3.0) < 1e-9);
+    REQUIRE(std::abs(b - 2.0) < 1e-9);
+}
+
+TEST_CASE("fitLine: negative slope", "[leastsquares]") {
+    // y = 10 - 3x
+    std::vector<double> x = {0, 1, 2, 3};
+    std::vector<double> y = {10, 7, 4, 1};
+    auto [a, b] = LeastSquares::fitLine(x, y);
+    REQUIRE(std::abs(a - 10.0) < 1e-9);
+    REQUIRE(std::abs(b - (-3.0)) < 1e-9);
+}
+
+TEST_CASE("fitLine: two points — unique solution", "[leastsquares]") {
+    // Exactly two points: line is unique
+    std::vector<double> x = {0, 2};
+    std::vector<double> y = {1, 5};
+    auto [a, b] = LeastSquares::fitLine(x, y);
+    REQUIRE(std::abs(a - 1.0) < 1e-9);
+    REQUIRE(std::abs(b - 2.0) < 1e-9);
+}
+
+TEST_CASE("fitLine: horizontal best-fit", "[leastsquares]") {
+    // y values all equal — slope should be 0, intercept = that value
+    std::vector<double> x = {1, 2, 3, 4, 5};
+    std::vector<double> y = {4, 4, 4, 4, 4};
+    auto [a, b] = LeastSquares::fitLine(x, y);
+    REQUIRE(std::abs(b) < 1e-9);
+    REQUIRE(std::abs(a - 4.0) < 1e-9);
+}
+
+TEST_CASE("fitLine: throws on empty vectors", "[leastsquares]") {
+    REQUIRE_THROWS_AS(
+        LeastSquares::fitLine({}, {}),
+        std::invalid_argument);
+}
+
+TEST_CASE("fitLine: throws on mismatched sizes", "[leastsquares]") {
+    REQUIRE_THROWS_AS(
+        LeastSquares::fitLine({1, 2, 3}, {1, 2}),
+        std::invalid_argument);
+}
+
+TEST_CASE("fitLine: throws on fewer than 2 points", "[leastsquares]") {
+    REQUIRE_THROWS_AS(
+        LeastSquares::fitLine({1.0}, {2.0}),
+        std::invalid_argument);
+}
+
+TEST_CASE("fitLine: throws on singular normal matrix (all x equal)", "[leastsquares]") {
+    REQUIRE_THROWS_AS(
+        LeastSquares::fitLine({2, 2, 2}, {1, 2, 3}),
+        std::invalid_argument);
+}
+
+// ─── Least Squares — fitParabola ─────────────────────────────────────────────
+
+TEST_CASE("fitParabola: exact fit — data lies on a parabola", "[leastsquares]") {
+    // y = 1 + 2x + 3x²
+    std::vector<double> x = {0, 1, 2, 3, 4};
+    std::vector<double> y = {1, 6, 17, 34, 57};
+    auto [a, b, c] = LeastSquares::fitParabola(x, y);
+    REQUIRE(std::abs(a - 1.0) < 1e-6);
+    REQUIRE(std::abs(b - 2.0) < 1e-6);
+    REQUIRE(std::abs(c - 3.0) < 1e-6);
+}
+
+TEST_CASE("fitParabola: noisy data — known approximate coefficients", "[leastsquares]") {
+    // Data: {0,1,2,3} vs {1,1.5,3.5,8.0}
+    // OLS normal equations give: a=1.05, b=-0.7, c=1.0 (verified via numpy.polyfit)
+    std::vector<double> x = {0, 1, 2, 3};
+    std::vector<double> y = {1, 1.5, 3.5, 8.0};
+    auto [a, b, c] = LeastSquares::fitParabola(x, y);
+    REQUIRE(std::abs(a - 1.05) < 1e-6);
+    REQUIRE(std::abs(b - (-0.7)) < 1e-6);
+    REQUIRE(std::abs(c - 1.0)  < 1e-6);
+}
+
+TEST_CASE("fitParabola: zero quadratic term recovers line", "[leastsquares]") {
+    // y = 2 + 5x — parabola fit on this linear data: c must be ~0
+    std::vector<double> x = {0, 1, 2, 3, 4};
+    std::vector<double> y = {2, 7, 12, 17, 22};
+    auto [a, b, c] = LeastSquares::fitParabola(x, y);
+    REQUIRE(std::abs(a - 2.0) < 1e-6);
+    REQUIRE(std::abs(b - 5.0) < 1e-6);
+    REQUIRE(std::abs(c) < 1e-6);
+}
+
+TEST_CASE("fitParabola: three points give unique parabola", "[leastsquares]") {
+    // Three points determine a unique quadratic exactly
+    std::vector<double> x = {0, 1, 2};
+    std::vector<double> y = {0, 1, 4};  // y = x²
+    auto [a, b, c] = LeastSquares::fitParabola(x, y);
+    REQUIRE(std::abs(a) < 1e-9);
+    REQUIRE(std::abs(b) < 1e-9);
+    REQUIRE(std::abs(c - 1.0) < 1e-9);
+}
+
+TEST_CASE("fitParabola: throws on empty vectors", "[leastsquares]") {
+    REQUIRE_THROWS_AS(
+        LeastSquares::fitParabola({}, {}),
+        std::invalid_argument);
+}
+
+TEST_CASE("fitParabola: throws on mismatched sizes", "[leastsquares]") {
+    REQUIRE_THROWS_AS(
+        LeastSquares::fitParabola({1, 2, 3}, {1, 2}),
+        std::invalid_argument);
+}
+
+TEST_CASE("fitParabola: throws on fewer than 3 points", "[leastsquares]") {
+    REQUIRE_THROWS_AS(
+        LeastSquares::fitParabola({1, 2}, {3, 4}),
+        std::invalid_argument);
+}
